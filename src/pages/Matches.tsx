@@ -2,60 +2,117 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/ui/Layout';
 import { matches } from '@/lib/data';
-import { Calendar, ChevronRight, Plus, Flag } from 'lucide-react';
+import { Calendar, ChevronRight, Plus, Flag, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MatchForm } from '@/components/ui/MatchForm';
+import { toast } from 'sonner';
 
 type MatchStatus = 'all' | 'upcoming' | 'completed';
 
 const Matches = () => {
   const [status, setStatus] = useState<MatchStatus>('all');
+  const [showForm, setShowForm] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<typeof matches[0] | undefined>(undefined);
   
   const filteredMatches = status === 'all' 
     ? matches 
     : matches.filter(match => match.status === status);
   
+  const handleAddMatch = () => {
+    setEditingMatch(undefined);
+    setShowForm(true);
+  };
+
+  const handleEditMatch = (match: typeof matches[0]) => {
+    setEditingMatch(match);
+    setShowForm(true);
+  };
+
+  const handleSubmit = (data: any) => {
+    if (editingMatch) {
+      // Logic for editing the match would go here
+      // For now, just show a toast notification
+      toast.success(`Match "${data.homeTeamName} vs ${data.awayTeamName}" modifié avec succès`, {
+        description: "Les modifications ont été enregistrées."
+      });
+    } else {
+      // Logic for adding the match would go here
+      // For now, just show a toast notification
+      toast.success(`Match "${data.homeTeamName} vs ${data.awayTeamName}" ajouté avec succès`, {
+        description: "Le nouveau match a été créé."
+      });
+    }
+    setShowForm(false);
+    setEditingMatch(undefined);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingMatch(undefined);
+  };
+
   return (
     <Layout title="Matchs">
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide pb-2">
-          <button
-            onClick={() => setStatus('all')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              status === 'all' 
-                ? 'bg-primary text-white' 
-                : 'bg-white/70 text-gray-700 hover:bg-white'
-            }`}
-          >
-            Tous
-          </button>
-          
-          <button
-            onClick={() => setStatus('upcoming')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              status === 'upcoming' 
-                ? 'bg-primary text-white' 
-                : 'bg-white/70 text-gray-700 hover:bg-white'
-            }`}
-          >
-            À venir
-          </button>
-          
-          <button
-            onClick={() => setStatus('completed')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              status === 'completed' 
-                ? 'bg-primary text-white' 
-                : 'bg-white/70 text-gray-700 hover:bg-white'
-            }`}
-          >
-            Terminés
-          </button>
+      {showForm ? (
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">{editingMatch ? 'Modifier le match' : 'Ajouter un match'}</h2>
+            <Button variant="ghost" size="icon" onClick={handleCancel}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <MatchForm 
+            initialData={editingMatch} 
+            onSubmit={handleSubmit} 
+            onCancel={handleCancel} 
+          />
         </div>
-        
-        <button className="bg-primary text-white rounded-lg px-4 py-2 flex items-center gap-2 hover:bg-primary/90 transition-colors">
-          <Plus className="h-4 w-4" />
-          <span>Nouveau match</span>
-        </button>
-      </div>
+      ) : (
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide pb-2">
+            <button
+              onClick={() => setStatus('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                status === 'all' 
+                  ? 'bg-primary text-white' 
+                  : 'bg-white/70 text-gray-700 hover:bg-white'
+              }`}
+            >
+              Tous
+            </button>
+            
+            <button
+              onClick={() => setStatus('upcoming')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                status === 'upcoming' 
+                  ? 'bg-primary text-white' 
+                  : 'bg-white/70 text-gray-700 hover:bg-white'
+              }`}
+            >
+              À venir
+            </button>
+            
+            <button
+              onClick={() => setStatus('completed')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                status === 'completed' 
+                  ? 'bg-primary text-white' 
+                  : 'bg-white/70 text-gray-700 hover:bg-white'
+              }`}
+            >
+              Terminés
+            </button>
+          </div>
+          
+          <Button 
+            className="bg-primary text-white rounded-lg px-4 py-2 flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            onClick={handleAddMatch}
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nouveau match</span>
+          </Button>
+        </div>
+      )}
       
       <div className="space-y-4">
         {filteredMatches.map(match => (
@@ -63,6 +120,7 @@ const Matches = () => {
             key={match.id} 
             className="glass-card rounded-xl p-4 animate-fade-in hover:shadow-lg transition-all cursor-pointer"
             style={{ animationDelay: `${match.id * 50}ms` }}
+            onClick={() => handleEditMatch(match)}
           >
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center text-sm text-gray-500">
