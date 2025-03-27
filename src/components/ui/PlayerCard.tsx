@@ -15,6 +15,7 @@ interface PlayerCardProps {
   age?: number;
   onClick?: () => void;
   className?: string;
+  children?: React.ReactNode;
 }
 
 export const PlayerCard = ({
@@ -28,7 +29,8 @@ export const PlayerCard = ({
   nationality,
   age,
   onClick,
-  className
+  className,
+  children
 }: PlayerCardProps) => {
   return (
     <div 
@@ -88,6 +90,8 @@ export const PlayerCard = ({
           <span>{number}</span>
         </div>
       </div>
+      
+      {children}
     </div>
   );
 };
