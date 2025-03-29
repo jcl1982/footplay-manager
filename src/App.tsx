@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Teams from "./pages/Teams";
 import Players from "./pages/Players";
 import Matches from "./pages/Matches";
+import Schedule from "./pages/Schedule";
 import Field from "./pages/Field";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/teams" element={<Teams />} />
           <Route path="/players" element={<Players />} />
           <Route path="/matches" element={<Matches />} />
+          <Route path="/schedule" element={<Schedule />} />
           <Route path="/field" element={<Field />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

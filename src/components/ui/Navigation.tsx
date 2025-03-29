@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Calendar, Layers, Shield } from 'lucide-react';
+import { Home, Users, Calendar, Layers, Shield, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { path: '/teams', label: 'Équipes', icon: Shield },
   { path: '/players', label: 'Joueurs', icon: Users },
   { path: '/matches', label: 'Matchs', icon: Calendar },
+  { path: '/schedule', label: 'Planning', icon: CalendarDays },
   { path: '/field', label: 'Terrain', icon: Layers },
 ];
 
