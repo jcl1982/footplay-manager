@@ -2,56 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Calendar, Clock, MapPin, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { fetchTeams } from '@/services/matchService';
-import { Match } from '@/services/matchService';
-
-// Define form schema with Zod
-const formSchema = z.object({
-  homeTeamId: z.string().min(1, { message: "L'équipe à domicile est requise" }),
-  awayTeamId: z.string().min(1, { message: "L'équipe à l'extérieur est requise" })
-    .refine((awayId) => awayId, { message: "L'équipe à l'extérieur est requise" }),
-  date: z.string().min(1, { message: "La date est requise" }),
-  time: z.string().min(1, { message: "L'heure est requise" }),
-  location: z.string().min(1, { message: "Le lieu est requis" }),
-  homeTeamScore: z.coerce.number().optional(),
-  awayTeamScore: z.coerce.number().optional(),
-  status: z.enum(['upcoming', 'live', 'completed']),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-interface MatchFormProps {
-  initialData?: Match;
-  onSubmit: (data: any) => void;
-  onCancel: () => void;
-}
+import { MatchTeamFields } from '@/components/matches/MatchTeamFields';
+import { MatchDetailsFields } from '@/components/matches/MatchDetailsFields';
+import { MatchScoreFields } from '@/components/matches/MatchScoreFields';
+import { MatchFormProps, matchFormSchema, MatchFormValues, Team } from '@/types/match';
 
 export const MatchForm: React.FC<MatchFormProps> = ({
   initialData,
   onSubmit,
   onCancel,
 }) => {
-  const [teams, setTeams] = useState<{id: string; name: string; logoUrl?: string}[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   const isEditing = !!initialData;
@@ -68,8 +34,8 @@ export const MatchForm: React.FC<MatchFormProps> = ({
   }
   
   // Initialize form with default values
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<MatchFormValues>({
+    resolver: zodResolver(matchFormSchema),
     defaultValues: initialData ? {
       homeTeamId: initialData.homeTeamId,
       awayTeamId: initialData.awayTeamId,
@@ -108,7 +74,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
     loadTeams();
   }, []);
   
-  const handleFormSubmit = (data: FormValues) => {
+  const handleFormSubmit = (data: MatchFormValues) => {
     // Submit form data to parent component
     onSubmit(data);
   };
@@ -142,170 +108,17 @@ export const MatchForm: React.FC<MatchFormProps> = ({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="homeTeamId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Équipe à domicile</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une équipe" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {homeTeamOptions.map(team => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <MatchTeamFields 
+                form={form} 
+                homeTeamOptions={homeTeamOptions} 
+                awayTeamOptions={awayTeamOptions} 
               />
               
-              <FormField
-                control={form.control}
-                name="awayTeamId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Équipe à l'extérieur</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une équipe" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {awayTeamOptions.map(team => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      <Calendar className="mr-1 h-4 w-4" /> Date
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      <Clock className="mr-1 h-4 w-4" /> Heure
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      <MapPin className="mr-1 h-4 w-4" /> Lieu
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Parc des Princes" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un statut" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="upcoming">À venir</SelectItem>
-                        <SelectItem value="live">En direct</SelectItem>
-                        <SelectItem value="completed">Terminé</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <MatchDetailsFields form={form} />
             </div>
             
             {(isCompleted || form.watch('status') === 'completed') && (
-              <div className="bg-muted/30 p-4 rounded-lg">
-                <h4 className="font-medium mb-3">Score</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="homeTeamScore"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Buts de l'équipe à domicile</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="awayTeamScore"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Buts de l'équipe à l'extérieur</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              <MatchScoreFields form={form} />
             )}
             
             <CardFooter className="flex justify-end gap-2 px-0 pt-4">
