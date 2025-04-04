@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Check, Info } from 'lucide-react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { UseFormReturn } from 'react-hook-form';
@@ -20,9 +21,20 @@ export const MatchScoreFields: React.FC<MatchScoreFieldsProps> = ({ form }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Buts de l'équipe à domicile</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} />
-              </FormControl>
+              <div className="relative">
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    className={field.value !== undefined ? "border-green-500 pr-8" : ""}
+                  />
+                </FormControl>
+                {field.value !== undefined ? (
+                  <Check className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                ) : form.formState.errors.homeTeamScore ? (
+                  <Info className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+                ) : null}
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -34,9 +46,20 @@ export const MatchScoreFields: React.FC<MatchScoreFieldsProps> = ({ form }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Buts de l'équipe à l'extérieur</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} />
-              </FormControl>
+              <div className="relative">
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    className={field.value !== undefined ? "border-green-500 pr-8" : ""}
+                  />
+                </FormControl>
+                {field.value !== undefined ? (
+                  <Check className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                ) : form.formState.errors.awayTeamScore ? (
+                  <Info className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+                ) : null}
+              </div>
               <FormMessage />
             </FormItem>
           )}

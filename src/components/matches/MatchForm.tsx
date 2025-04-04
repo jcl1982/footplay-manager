@@ -2,10 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Trophy } from 'lucide-react';
+import { Trophy, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { fetchTeams } from '@/services/matchService';
 import { MatchTeamFields } from '@/components/matches/MatchTeamFields';
 import { MatchDetailsFields } from '@/components/matches/MatchDetailsFields';
@@ -19,6 +20,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
 }) => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   
   const isEditing = !!initialData;
   const isCompleted = initialData?.status === 'completed';
@@ -55,6 +57,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
       awayTeamScore: 0,
       status: 'upcoming',
     },
+    mode: 'onChange'
   });
 
   // Fetch teams for dropdowns
@@ -66,6 +69,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
         setTeams(teamsData);
       } catch (error) {
         console.error('Error loading teams:', error);
+        setFormError('Erreur lors du chargement des équipes. Veuillez réessayer.');
       } finally {
         setIsLoading(false);
       }
@@ -75,6 +79,13 @@ export const MatchForm: React.FC<MatchFormProps> = ({
   }, []);
   
   const handleFormSubmit = (data: MatchFormValues) => {
+    // Check if teams are the same
+    if (data.homeTeamId === data.awayTeamId) {
+      setFormError('Une équipe ne peut pas jouer contre elle-même.');
+      return;
+    }
+    
+    setFormError('');
     // Submit form data to parent component
     onSubmit(data);
   };
@@ -105,6 +116,13 @@ export const MatchForm: React.FC<MatchFormProps> = ({
       </CardHeader>
       
       <CardContent>
+        {formError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,7 +143,10 @@ export const MatchForm: React.FC<MatchFormProps> = ({
               <Button type="button" variant="outline" onClick={onCancel}>
                 Annuler
               </Button>
-              <Button type="submit">
+              <Button 
+                type="submit"
+                disabled={!form.formState.isValid && form.formState.isDirty}
+              >
                 {isEditing ? 'Enregistrer' : 'Ajouter'}
               </Button>
             </CardFooter>

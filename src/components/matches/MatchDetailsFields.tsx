@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, Info } from 'lucide-react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,9 +22,20 @@ export const MatchDetailsFields: React.FC<MatchDetailsFieldsProps> = ({ form }) 
             <FormLabel className="flex items-center">
               <Calendar className="mr-1 h-4 w-4" /> Date
             </FormLabel>
-            <FormControl>
-              <Input type="date" {...field} />
-            </FormControl>
+            <div className="relative">
+              <FormControl>
+                <Input 
+                  type="date" 
+                  {...field} 
+                  className={field.value ? "border-green-500 pr-8" : ""}
+                />
+              </FormControl>
+              {field.value ? (
+                <Check className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+              ) : form.formState.errors.date ? (
+                <Info className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+              ) : null}
+            </div>
             <FormMessage />
           </FormItem>
         )}
@@ -38,9 +49,20 @@ export const MatchDetailsFields: React.FC<MatchDetailsFieldsProps> = ({ form }) 
             <FormLabel className="flex items-center">
               <Clock className="mr-1 h-4 w-4" /> Heure
             </FormLabel>
-            <FormControl>
-              <Input type="time" {...field} />
-            </FormControl>
+            <div className="relative">
+              <FormControl>
+                <Input 
+                  type="time" 
+                  {...field} 
+                  className={field.value ? "border-green-500 pr-8" : ""}
+                />
+              </FormControl>
+              {field.value ? (
+                <Check className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+              ) : form.formState.errors.time ? (
+                <Info className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+              ) : null}
+            </div>
             <FormMessage />
           </FormItem>
         )}
@@ -54,9 +76,20 @@ export const MatchDetailsFields: React.FC<MatchDetailsFieldsProps> = ({ form }) 
             <FormLabel className="flex items-center">
               <MapPin className="mr-1 h-4 w-4" /> Lieu
             </FormLabel>
-            <FormControl>
-              <Input placeholder="Parc des Princes" {...field} />
-            </FormControl>
+            <div className="relative">
+              <FormControl>
+                <Input 
+                  placeholder="Parc des Princes" 
+                  {...field} 
+                  className={field.value ? "border-green-500 pr-8" : ""}
+                />
+              </FormControl>
+              {field.value ? (
+                <Check className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+              ) : form.formState.errors.location ? (
+                <Info className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+              ) : null}
+            </div>
             <FormMessage />
           </FormItem>
         )}
@@ -68,21 +101,27 @@ export const MatchDetailsFields: React.FC<MatchDetailsFieldsProps> = ({ form }) 
         render={({ field }) => (
           <FormItem>
             <FormLabel>Statut</FormLabel>
-            <Select 
-              onValueChange={field.onChange}
-              defaultValue={field.value}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un statut" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="upcoming">À venir</SelectItem>
-                <SelectItem value="live">En direct</SelectItem>
-                <SelectItem value="completed">Terminé</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Select 
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger className={field.value ? "border-green-500 pr-8" : ""}>
+                    <SelectValue placeholder="Sélectionner un statut" />
+                    {field.value && <Check className="absolute right-8 h-4 w-4 text-green-500" />}
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="upcoming">À venir</SelectItem>
+                  <SelectItem value="live">En direct</SelectItem>
+                  <SelectItem value="completed">Terminé</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.formState.errors.status && (
+                <Info className="absolute right-8 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+              )}
+            </div>
             <FormMessage />
           </FormItem>
         )}
