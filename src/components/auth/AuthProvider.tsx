@@ -33,20 +33,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       
       if (session?.user) {
-        // Fetch the user's profile to get the role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        const userWithRole = { 
-          ...session.user,
-          role: profile?.role || 'user'
-        };
-        
-        setUser(userWithRole);
-        setIsAdmin(profile?.role === 'admin');
+        try {
+          // Fetch the user's profile to get the role
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching profile:', error);
+            setUser(session.user);
+            setIsAdmin(false);
+          } else {
+            const userWithRole = { 
+              ...session.user,
+              role: profile?.role || 'user'
+            };
+            
+            setUser(userWithRole);
+            setIsAdmin(profile?.role === 'admin');
+          }
+        } catch (error) {
+          console.error('Error in profile fetch:', error);
+          setUser(session.user);
+          setIsAdmin(false);
+        }
       } else {
         setUser(null);
         setIsAdmin(false);
@@ -58,20 +70,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(session);
           
           if (session?.user) {
-            // Fetch the user's profile to get the role
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-            
-            const userWithRole = { 
-              ...session.user,
-              role: profile?.role || 'user'
-            };
-            
-            setUser(userWithRole);
-            setIsAdmin(profile?.role === 'admin');
+            try {
+              // Fetch the user's profile to get the role
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (error) {
+                console.error('Error fetching profile on auth change:', error);
+                setUser(session.user);
+                setIsAdmin(false);
+              } else {
+                const userWithRole = { 
+                  ...session.user,
+                  role: profile?.role || 'user'
+                };
+                
+                setUser(userWithRole);
+                setIsAdmin(profile?.role === 'admin');
+              }
+            } catch (error) {
+              console.error('Error in profile fetch on auth change:', error);
+              setUser(session.user);
+              setIsAdmin(false);
+            }
           } else {
             setUser(null);
             setIsAdmin(false);
