@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Calendar, Clock, MapPin, CalendarDays } from 'lucide-react';
+import { Calendar, Clock, MapPin, CalendarDays, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { 
@@ -23,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { teams, matches } from '@/lib/data';
 
 // Define form schema with Zod
@@ -33,6 +35,7 @@ const formSchema = z.object({
   teamIds: z.array(z.coerce.number()).min(2, { message: "Au moins deux équipes sont requises" }),
   timeSlots: z.array(z.string()).min(1, { message: "Au moins un créneau horaire est requis" }),
   matchDuration: z.coerce.number().min(60, { message: "La durée minimum est de 60 minutes" }),
+  roundRobin: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -70,6 +73,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
       teamIds: [],
       timeSlots: DEFAULT_TIME_SLOTS,
       matchDuration: 90,
+      roundRobin: false,
     },
   });
 
@@ -100,6 +104,41 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
       form.setValue('timeSlots', newSlots);
     }
   };
+
+  // Calculate the number of potential matches
+  const selectedTeams = form.watch('teamIds');
+  const roundRobin = form.watch('roundRobin');
+  const fieldCount = form.watch('fieldCount');
+  const timeSlots = form.watch('timeSlots');
+  
+  let potentialMatchCount = 0;
+  
+  if (selectedTeams.length >= 2) {
+    if (roundRobin) {
+      // For round robin: (n-1) rounds with n/2 matches per round
+      potentialMatchCount = (selectedTeams.length - 1) * Math.floor(selectedTeams.length / 2);
+      
+      // Add extra match if odd number of teams (each team sits out once)
+      if (selectedTeams.length % 2 === 1) {
+        potentialMatchCount += Math.floor(selectedTeams.length / 2);
+      }
+    } else {
+      // For regular schedule: n*(n-1)/2 total matches (each team plays every other team once)
+      potentialMatchCount = (selectedTeams.length * (selectedTeams.length - 1)) / 2;
+    }
+  }
+  
+  // Calculate available slots
+  const startDate = form.watch('startDate');
+  const endDate = form.watch('endDate');
+  
+  let availableSlots = 0;
+  if (startDate && endDate && timeSlots && timeSlots.length > 0 && fieldCount) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    availableSlots = daysDiff * timeSlots.length * fieldCount;
+  }
 
   return (
     <Card className="w-full animate-fade-in">
@@ -181,6 +220,29 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
             
             <FormField
               control={form.control}
+              name="roundRobin"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center">
+                      <Repeat className="mr-1 h-4 w-4" /> Tournoi complet (Round Robin)
+                    </FormLabel>
+                    <FormDescription>
+                      Chaque équipe affrontera toutes les autres équipes une fois
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="teamIds"
               render={() => (
                 <FormItem>
@@ -248,6 +310,28 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
                 </FormItem>
               )}
             />
+            
+            {/* Match counts informational display */}
+            {selectedTeams.length >= 2 && (
+              <div className="rounded-lg bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-medium">Informations complémentaires :</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>Nombre de créneaux disponibles:</div>
+                  <div className="font-medium">{availableSlots}</div>
+                  
+                  <div>Nombre de matchs potentiels:</div>
+                  <div className={`font-medium ${potentialMatchCount > availableSlots ? 'text-amber-600' : 'text-green-600'}`}>
+                    {potentialMatchCount}
+                  </div>
+                </div>
+                {potentialMatchCount > availableSlots && (
+                  <p className="text-xs text-amber-600">
+                    Attention: le nombre de matchs potentiels dépasse les créneaux disponibles. 
+                    Certains matchs ne pourront pas être planifiés.
+                  </p>
+                )}
+              </div>
+            )}
             
             <CardFooter className="flex justify-end gap-2 px-0 pt-4">
               <Button type="submit" disabled={isGenerating}>
