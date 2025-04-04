@@ -109,6 +109,7 @@ export type Database = {
           avatar_url: string | null
           full_name: string | null
           id: string
+          role: string | null
           updated_at: string | null
           username: string | null
         }
@@ -116,6 +117,7 @@ export type Database = {
           avatar_url?: string | null
           full_name?: string | null
           id: string
+          role?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -123,6 +125,7 @@ export type Database = {
           avatar_url?: string | null
           full_name?: string | null
           id?: string
+          role?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -169,6 +172,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_team_name: {
         Args: {
           team_id: string

@@ -3,8 +3,16 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 
-export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requireAdmin?: boolean;
+}
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requireAdmin = false 
+}) => {
+  const { user, isLoading, isAdmin } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -18,6 +26,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   if (!user) {
     // Redirect to auth page if user is not logged in
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (requireAdmin && !isAdmin) {
+    // Redirect to home page if admin access is required but user is not an admin
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
