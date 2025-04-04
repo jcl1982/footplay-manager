@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,12 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Match, teams } from '@/lib/data';
+import { fetchTeams } from '@/services/matchService';
+import { Match } from '@/services/matchService';
 
 // Define form schema with Zod
 const formSchema = z.object({
-  homeTeamId: z.coerce.number().min(1, { message: "L'équipe à domicile est requise" }),
-  awayTeamId: z.coerce.number().min(1, { message: "L'équipe à l'extérieur est requise" })
+  homeTeamId: z.string().min(1, { message: "L'équipe à domicile est requise" }),
+  awayTeamId: z.string().min(1, { message: "L'équipe à l'extérieur est requise" })
     .refine((awayId) => awayId, { message: "L'équipe à l'extérieur est requise" }),
   date: z.string().min(1, { message: "La date est requise" }),
   time: z.string().min(1, { message: "L'heure est requise" }),
@@ -50,6 +51,9 @@ export const MatchForm: React.FC<MatchFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
+  const [teams, setTeams] = useState<{id: string; name: string; logoUrl?: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const isEditing = !!initialData;
   const isCompleted = initialData?.status === 'completed';
   
@@ -76,8 +80,8 @@ export const MatchForm: React.FC<MatchFormProps> = ({
       awayTeamScore: initialData.awayTeamScore || 0,
       status: initialData.status,
     } : {
-      homeTeamId: 0,
-      awayTeamId: 0,
+      homeTeamId: '',
+      awayTeamId: '',
       date: '',
       time: '',
       location: '',
@@ -87,27 +91,43 @@ export const MatchForm: React.FC<MatchFormProps> = ({
     },
   });
 
-  const handleFormSubmit = (data: FormValues) => {
-    // Combine date and time into ISO string
-    const dateTimeString = `${data.date}T${data.time}:00`;
-    
-    // Prepare the data for submission
-    const submissionData = {
-      ...data,
-      date: dateTimeString,
-      homeTeamName: teams.find(team => team.id === data.homeTeamId)?.name || '',
-      awayTeamName: teams.find(team => team.id === data.awayTeamId)?.name || '',
-      homeTeamLogo: teams.find(team => team.id === data.homeTeamId)?.logoUrl || '',
-      awayTeamLogo: teams.find(team => team.id === data.awayTeamId)?.logoUrl || '',
+  // Fetch teams for dropdowns
+  useEffect(() => {
+    const loadTeams = async () => {
+      setIsLoading(true);
+      try {
+        const teamsData = await fetchTeams();
+        setTeams(teamsData);
+      } catch (error) {
+        console.error('Error loading teams:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
-    delete submissionData.time;
-    onSubmit(submissionData);
+    loadTeams();
+  }, []);
+  
+  const handleFormSubmit = (data: FormValues) => {
+    // Submit form data to parent component
+    onSubmit(data);
   };
 
   // This prevents choosing the same team for home and away
   const awayTeamOptions = teams.filter(team => team.id !== form.watch('homeTeamId'));
   const homeTeamOptions = teams.filter(team => team.id !== form.watch('awayTeamId'));
+
+  if (isLoading) {
+    return (
+      <Card className="w-full mx-auto animate-fade-in">
+        <CardContent className="p-6">
+          <div className="flex justify-center">
+            <div className="animate-pulse h-6 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full mx-auto animate-fade-in">
@@ -129,8 +149,8 @@ export const MatchForm: React.FC<MatchFormProps> = ({
                   <FormItem>
                     <FormLabel>Équipe à domicile</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      defaultValue={field.value ? field.value.toString() : undefined}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -139,7 +159,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
                       </FormControl>
                       <SelectContent>
                         {homeTeamOptions.map(team => (
-                          <SelectItem key={team.id} value={team.id.toString()}>
+                          <SelectItem key={team.id} value={team.id}>
                             {team.name}
                           </SelectItem>
                         ))}
@@ -157,8 +177,8 @@ export const MatchForm: React.FC<MatchFormProps> = ({
                   <FormItem>
                     <FormLabel>Équipe à l'extérieur</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      defaultValue={field.value ? field.value.toString() : undefined}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -167,7 +187,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
                       </FormControl>
                       <SelectContent>
                         {awayTeamOptions.map(team => (
-                          <SelectItem key={team.id} value={team.id.toString()}>
+                          <SelectItem key={team.id} value={team.id}>
                             {team.name}
                           </SelectItem>
                         ))}
@@ -233,7 +253,7 @@ export const MatchForm: React.FC<MatchFormProps> = ({
                   <FormItem>
                     <FormLabel>Statut</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(value)}
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>

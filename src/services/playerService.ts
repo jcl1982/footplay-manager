@@ -112,6 +112,8 @@ export const addPlayer = async (playerData: PlayerFormData): Promise<Player | nu
     
     if (error) throw error;
     
+    if (!data) return null;
+    
     return formatPlayer(data, data.teams?.name || '');
   } catch (error: any) {
     console.error('Error adding player:', error);
@@ -156,6 +158,8 @@ export const updatePlayer = async (id: string, playerData: PlayerFormData): Prom
       .single();
     
     if (error) throw error;
+    
+    if (!data) return null;
     
     return formatPlayer(data, data.teams?.name || '');
   } catch (error: any) {
