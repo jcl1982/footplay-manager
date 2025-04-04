@@ -3,7 +3,7 @@ import React from 'react';
 import { Layout } from '@/components/ui/Layout';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MatchForm } from '@/components/ui/MatchForm';
+import { MatchForm } from '@/components/matches/MatchForm';
 import { useMatches } from '@/hooks/useMatches';
 import { MatchesFilter } from '@/components/matches/MatchesFilter';
 import { MatchesList } from '@/components/matches/MatchesList';
