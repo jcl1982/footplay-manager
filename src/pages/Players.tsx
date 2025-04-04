@@ -1,27 +1,54 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/ui/Layout';
 import { PlayerCard } from '@/components/ui/PlayerCard';
 import { PlayerForm } from '@/components/ui/PlayerForm';
-import { players, teams } from '@/lib/data';
-import { Search, Plus, Filter, Edit } from 'lucide-react';
+import { Search, Plus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-
-// Unique ID generator for new players
-const generateId = () => {
-  return Math.max(0, ...players.map(player => player.id)) + 1;
-};
+import { fetchPlayers, addPlayer, updatePlayer, fetchTeams, Player } from '@/services/playerService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Players = () => {
-  const [selectedTeam, setSelectedTeam] = useState<number | 'all'>('all');
+  const [selectedTeam, setSelectedTeam] = useState<string | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [currentPlayers, setCurrentPlayers] = useState(players);
-  const [editingPlayer, setEditingPlayer] = useState<number | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
+  
+  const queryClient = useQueryClient();
+  
+  // Fetch players and teams data
+  const { data: players = [], isLoading: playersLoading } = useQuery({
+    queryKey: ['players'],
+    queryFn: fetchPlayers
+  });
+  
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
+    queryKey: ['teams'],
+    queryFn: fetchTeams
+  });
+  
+  // Mutations for adding and updating players
+  const addPlayerMutation = useMutation({
+    mutationFn: addPlayer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      setShowForm(false);
+      toast.success('Joueur ajouté avec succès');
+    }
+  });
+  
+  const updatePlayerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => updatePlayer(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      setEditingPlayer(null);
+      toast.success('Joueur mis à jour avec succès');
+    }
+  });
   
   // Filter players based on team selection and search term
-  const filteredPlayers = currentPlayers
+  const filteredPlayers = players
     .filter(player => selectedTeam === 'all' || player.teamId === selectedTeam)
     .filter(player => 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,50 +57,16 @@ const Players = () => {
     );
   
   const handleAddPlayer = (playerData: any) => {
-    const teamName = teams.find(team => team.id === playerData.teamId)?.name || '';
-    
-    const newPlayer = {
-      id: generateId(),
-      name: playerData.name,
-      position: playerData.position,
-      number: playerData.number,
-      teamId: playerData.teamId,
-      teamName: teamName,
-      rating: 6.0, // Default rating for new players
-      photoUrl: playerData.photoUrl || undefined,
-      nationality: playerData.nationality || undefined,
-      age: playerData.age || undefined,
-    };
-    
-    setCurrentPlayers([...currentPlayers, newPlayer]);
-    setShowForm(false);
-    toast.success('Joueur ajouté avec succès');
+    addPlayerMutation.mutate(playerData);
   };
   
   const handleUpdatePlayer = (playerData: any) => {
-    const teamName = teams.find(team => team.id === playerData.teamId)?.name || '';
-    
-    setCurrentPlayers(currentPlayers.map(player => 
-      player.id === editingPlayer
-        ? {
-            ...player,
-            name: playerData.name,
-            position: playerData.position,
-            number: playerData.number,
-            teamId: playerData.teamId,
-            teamName: teamName,
-            photoUrl: playerData.photoUrl || undefined,
-            nationality: playerData.nationality || undefined,
-            age: playerData.age || undefined,
-          }
-        : player
-    ));
-    
-    setEditingPlayer(null);
-    toast.success('Joueur mis à jour avec succès');
+    if (editingPlayer) {
+      updatePlayerMutation.mutate({ id: editingPlayer, data: playerData });
+    }
   };
   
-  const handlePlayerEdit = (id: number) => {
+  const handlePlayerEdit = (id: string) => {
     setEditingPlayer(id);
   };
   
@@ -86,9 +79,11 @@ const Players = () => {
     <Layout title="Joueurs">
       {showForm || editingPlayer !== null ? (
         <PlayerForm 
-          player={editingPlayer !== null ? currentPlayers.find(p => p.id === editingPlayer) : undefined}
+          player={editingPlayer !== null ? players.find(p => p.id === editingPlayer) : undefined}
           onSubmit={editingPlayer !== null ? handleUpdatePlayer : handleAddPlayer}
           onCancel={handleFormCancel}
+          teams={teams}
+          isLoading={addPlayerMutation.isPending || updatePlayerMutation.isPending}
         />
       ) : (
         <div className="mb-6 space-y-4">
@@ -141,36 +136,48 @@ const Players = () => {
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredPlayers.map(player => (
-          <PlayerCard
-            key={player.id}
-            id={player.id}
-            name={player.name}
-            position={player.position}
-            number={player.number}
-            teamName={player.teamName}
-            rating={player.rating}
-            photoUrl={player.photoUrl}
-            nationality={player.nationality}
-            age={player.age}
-            onClick={() => handlePlayerEdit(player.id)}
-            className="relative"
-          >
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePlayerEdit(player.id);
-              }}
-            >
-              <Edit className="h-4 w-4 text-gray-600" />
-            </Button>
-          </PlayerCard>
-        ))}
-      </div>
+      {playersLoading ? (
+        <div className="flex justify-center p-12">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredPlayers.length === 0 ? (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              {searchTerm ? 'Aucun joueur ne correspond à votre recherche' : 'Aucun joueur disponible'}
+            </div>
+          ) : (
+            filteredPlayers.map(player => (
+              <PlayerCard
+                key={player.id}
+                id={player.id}
+                name={player.name}
+                position={player.position}
+                number={player.number}
+                teamName={player.teamName}
+                rating={player.rating}
+                photoUrl={player.photoUrl}
+                nationality={player.nationality}
+                age={player.age}
+                onClick={() => handlePlayerEdit(player.id)}
+                className="relative"
+              >
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePlayerEdit(player.id);
+                  }}
+                >
+                  <Edit className="h-4 w-4 text-gray-600" />
+                </Button>
+              </PlayerCard>
+            ))
+          )}
+        </div>
+      )}
     </Layout>
   );
 };

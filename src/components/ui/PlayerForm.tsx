@@ -12,13 +12,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { teams, Player } from '@/lib/data';
+import { Player } from '@/services/playerService';
 
 type PlayerFormValues = {
   name: string;
   position: string;
   number: number;
-  teamId: number;
+  teamId: string;
   nationality?: string;
   age?: number;
   photoUrl?: string;
@@ -28,6 +28,8 @@ interface PlayerFormProps {
   player?: Player;
   onSubmit: (values: PlayerFormValues) => void;
   onCancel: () => void;
+  teams: { id: string; name: string }[];
+  isLoading?: boolean;
 }
 
 const positions = [
@@ -35,7 +37,7 @@ const positions = [
   'MD', 'MG', 'MOC', 'AT', 'AG', 'AD'
 ];
 
-export const PlayerForm = ({ player, onSubmit, onCancel }: PlayerFormProps) => {
+export const PlayerForm = ({ player, onSubmit, onCancel, teams, isLoading = false }: PlayerFormProps) => {
   const form = useForm<PlayerFormValues>({
     defaultValues: player 
       ? {
@@ -51,7 +53,7 @@ export const PlayerForm = ({ player, onSubmit, onCancel }: PlayerFormProps) => {
           name: '',
           position: 'MC',
           number: 1,
-          teamId: teams[0]?.id || 1,
+          teamId: teams[0]?.id || '',
           nationality: '',
           age: undefined,
           photoUrl: '',
@@ -148,7 +150,6 @@ export const PlayerForm = ({ player, onSubmit, onCancel }: PlayerFormProps) => {
                     <select
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                       {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
                     >
                       {teams.map((team) => (
                         <option key={team.id} value={team.id}>
@@ -213,10 +214,13 @@ export const PlayerForm = ({ player, onSubmit, onCancel }: PlayerFormProps) => {
           />
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" type="button" onClick={onCancel}>
+            <Button variant="outline" type="button" onClick={onCancel} disabled={isLoading}>
               Annuler
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+              ) : null}
               {player ? 'Mettre à jour' : 'Ajouter'}
             </Button>
           </div>
